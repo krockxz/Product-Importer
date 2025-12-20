@@ -4,7 +4,17 @@ from . import views
 app_name = 'products'
 
 urlpatterns = [
+    # Product endpoints
     path('stats/', views.product_stats, name='product-stats'),
     path('', views.ProductListCreateView.as_view(), name='product-list-create'),
     path('<sku>/', views.ProductDetailView.as_view(), name='product-detail'),
+    path('delete_all/', views.delete_all_products, name='delete-all-products'),
+
+    # Upload endpoints
+    path('upload/', views.upload_csv, name='upload-csv'),
+    path('upload/status/<str:task_id>/', views.upload_status, name='upload-status'),
+
+    # Webhook endpoints
+    path('webhooks/', views.WebhookListCreateView.as_view(), name='webhook-list-create'),
+    path('webhooks/<int:pk>/', views.WebhookDetailView.as_view(), name='webhook-detail'),
 ]
