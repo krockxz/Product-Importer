@@ -44,12 +44,19 @@ def get_filtered_products(queryset, params):
     if search := params.get('search'):
         queryset = queryset.filter(Q(sku__icontains=search) | Q(name__icontains=search))
 
+    # Individual filters
+    if sku := params.get('sku'):
+        queryset = queryset.filter(sku__icontains=sku)
+
+    if name := params.get('name'):
+        queryset = queryset.filter(name__icontains=name)
+
     return queryset
 
 
 class ProductListCreateView(generics.ListCreateAPIView):
     """List and create products."""
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]  # Allow unauthenticated access for development
     pagination_class = ProductPagination
 
     def get_serializer_class(self):
@@ -63,7 +70,7 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     """Retrieve, update, or delete a product."""
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]  # Allow unauthenticated access for development
     lookup_field = 'sku'
 
 
@@ -71,7 +78,7 @@ class WebhookMixin:
     """Common configuration for webhook views."""
     queryset = Webhook.objects.all()
     serializer_class = WebhookSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]  # Allow unauthenticated access for development
 
 
 class WebhookListCreateView(WebhookMixin, generics.ListCreateAPIView):
@@ -85,7 +92,29 @@ class WebhookDetailView(WebhookMixin, generics.RetrieveUpdateDestroyAPIView):
 
 
 @api_view(['POST'])
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([permissions.AllowAny])
+def test_webhook(request, pk):
+    """Test a webhook by sending a sample payload."""
+    try:
+        webhook = Webhook.objects.get(pk=pk)
+        # Import here to avoid circular imports
+        from .tasks import send_webhook
+        # Send a test payload
+        send_webhook(
+            webhook.url,
+            'test',
+            {'message': 'This is a test webhook from Product Importer', 'timestamp': '2024-01-01T00:00:00Z'}
+        )
+        return success_response({'message': 'Test webhook sent'})
+    except Webhook.DoesNotExist:
+        return error_response('Webhook not found', 'WEBHOOK_NOT_FOUND', status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return error_response(f'Failed to send test webhook: {str(e)}', 'TEST_FAILED',
+                             status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
 def upload_csv(request):
     """Upload CSV file for import."""
     if 'file' not in request.FILES:
@@ -115,7 +144,7 @@ def upload_csv(request):
 
 
 @api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([permissions.AllowAny])
 def upload_status(request, task_id):
     """Get import status by task_id."""
     try:
@@ -138,8 +167,27 @@ def upload_status(request, task_id):
                              status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
+def bulk_delete_products(request):
+    """Bulk delete products by IDs."""
+    ids = request.data.get('ids', [])
+    if not ids:
+        return error_response('No product IDs provided', 'NO_IDS')
+
+    try:
+        deleted_count, _ = Product.objects.filter(id__in=ids).delete()
+        return success_response({
+            'message': f'Deleted {deleted_count} products',
+            'deleted_count': deleted_count
+        })
+    except Exception as e:
+        return error_response(f'Failed to delete products: {str(e)}', 'DELETE_FAILED',
+                             status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 @api_view(['DELETE'])
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([permissions.AllowAny])
 def delete_all_products(request):
     """Delete all products (requires confirmation)."""
     if not request.data.get('confirmed'):
@@ -164,7 +212,7 @@ def delete_all_products(request):
 
 
 @api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([permissions.AllowAny])
 def product_stats(request):
     """Get product statistics."""
     return success_response({
