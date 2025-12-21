@@ -65,6 +65,8 @@ def _prepare_webhook_payload(product: Product, event_type: str) -> Dict[str, Any
     Returns:
         Dictionary containing the webhook payload
     """
+    from django.utils import timezone
+    
     return {
         "event": event_type,
         "sku": product.sku,
@@ -73,5 +75,5 @@ def _prepare_webhook_payload(product: Product, event_type: str) -> Dict[str, Any
         "active": product.active,
         "created_at": product.created_at.isoformat(),
         "updated_at": product.updated_at.isoformat(),
-        "timestamp": transaction.atomic()  # Use atomic operation for timestamp consistency
+        "timestamp": timezone.now().isoformat()
     }

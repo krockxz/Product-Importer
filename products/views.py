@@ -98,13 +98,16 @@ def test_webhook(request, pk):
     try:
         webhook = Webhook.objects.get(pk=pk)
         # Import here to avoid circular imports
-        from .tasks import send_webhook
-        # Send a test payload
-        send_webhook(
-            webhook.url,
-            'test',
-            {'message': 'This is a test webhook from Product Importer', 'timestamp': '2024-01-01T00:00:00Z'}
-        )
+        from .tasks import trigger_webhook
+        from django.utils import timezone
+        
+        # Send a test payload asynchronously
+        payload = {
+            'event': 'test',
+            'message': 'This is a test webhook from Product Importer',
+            'timestamp': timezone.now().isoformat()
+        }
+        trigger_webhook.delay(webhook.url, payload)
         return success_response({'message': 'Test webhook sent'})
     except Webhook.DoesNotExist:
         return error_response('Webhook not found', 'WEBHOOK_NOT_FOUND', status.HTTP_404_NOT_FOUND)

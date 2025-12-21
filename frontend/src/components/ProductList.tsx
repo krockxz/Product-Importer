@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Trash2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Trash2, Search, ChevronLeft, ChevronRight, Plus, Edit } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Dialog, DialogHeader, DialogTitle, DialogContent, DialogFooter } from './ui/dialog';
+import { ProductFormDialog } from './ProductFormDialog';
 import { productsApi } from '@/services/api';
 import type { Product } from '@/services/api';
 
@@ -18,7 +19,10 @@ export function ProductList({ refreshTrigger }: { refreshTrigger?: number }) {
     name: '',
   });
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [showProductForm, setShowProductForm] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   const fetchProducts = async () => {
     try {
@@ -87,6 +91,30 @@ export function ProductList({ refreshTrigger }: { refreshTrigger?: number }) {
     }
   };
 
+  const handleDeleteAll = async () => {
+    try {
+      setDeleteLoading(true);
+      await productsApi.deleteAll();
+      setShowDeleteAllModal(false);
+      setSelectedIds([]);
+      fetchProducts();
+    } catch (error) {
+      console.error('Failed to delete all products:', error);
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleCreateProduct = () => {
+    setEditingProduct(null);
+    setShowProductForm(true);
+  };
+
+  const handleEditProduct = (product: Product) => {
+    setEditingProduct(product);
+    setShowProductForm(true);
+  };
+
   const handleFilterChange = (key: string, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
     setPage(1);
@@ -96,16 +124,22 @@ export function ProductList({ refreshTrigger }: { refreshTrigger?: number }) {
     <div className="w-full max-w-6xl mx-auto p-6 bg-white rounded-lg shadow-md">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">Products</h2>
-        {selectedIds.length > 0 && (
-          <Button
-            variant="destructive"
-            onClick={() => setShowDeleteModal(true)}
-            className="flex items-center space-x-2"
-          >
-            <Trash2 className="h-4 w-4" />
-            <span>Delete Selected ({selectedIds.length})</span>
+        <div className="flex items-center space-x-3">
+          <Button onClick={handleCreateProduct} className="flex items-center space-x-2">
+            <Plus className="h-4 w-4" />
+            <span>Create Product</span>
           </Button>
-        )}
+          {selectedIds.length > 0 && (
+            <Button
+              variant="destructive"
+              onClick={() => setShowDeleteModal(true)}
+              className="flex items-center space-x-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              <span>Delete Selected ({selectedIds.length})</span>
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="flex space-x-4 mb-6">
@@ -152,7 +186,7 @@ export function ProductList({ refreshTrigger }: { refreshTrigger?: number }) {
                   <th className="text-left py-3 px-4">Price</th>
                   <th className="text-left py-3 px-4">Stock</th>
                   <th className="text-left py-3 px-4">Created</th>
-                  <th className="text-left py-3 px-4"></th>
+                  <th className="text-left py-3 px-4">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -174,14 +208,24 @@ export function ProductList({ refreshTrigger }: { refreshTrigger?: number }) {
                       {new Date(product.created_at).toLocaleDateString()}
                     </td>
                     <td className="py-3 px-4">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(product.id)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEditProduct(product)}
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(product.id)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -226,6 +270,26 @@ export function ProductList({ refreshTrigger }: { refreshTrigger?: number }) {
         </>
       )}
 
+      {/* Danger Zone - Delete All */}
+      {totalCount > 0 && (
+        <div className="mt-8 pt-6 border-t border-gray-200">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <h3 className="text-sm font-semibold text-red-900 mb-2">Danger Zone</h3>
+            <p className="text-sm text-red-700 mb-3">
+              Delete all {totalCount} products from the database. This action cannot be undone.
+            </p>
+            <Button
+              variant="destructive"
+              onClick={() => setShowDeleteAllModal(true)}
+              className="text-sm"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete All Products
+            </Button>
+          </div>
+        </div>
+      )}
+
       <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
         <DialogHeader>
           <DialogTitle>Confirm Bulk Delete</DialogTitle>
@@ -253,6 +317,54 @@ export function ProductList({ refreshTrigger }: { refreshTrigger?: number }) {
           </Button>
         </DialogFooter>
       </Dialog>
+
+      <Dialog open={showDeleteAllModal} onOpenChange={setShowDeleteAllModal}>
+        <DialogHeader>
+          <DialogTitle>Delete All Products?</DialogTitle>
+        </DialogHeader>
+        <DialogContent>
+          <div className="space-y-3">
+            <p className="text-red-800 font-semibold">⚠️ Warning: This action cannot be undone!</p>
+            <p>
+              You are about to delete <strong>all {totalCount} products</strong> from the database.
+              This will permanently remove all product data.
+            </p>
+            <p className="text-sm text-gray-600">
+              Are you absolutely sure you want to continue?
+            </p>
+          </div>
+        </DialogContent>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => setShowDeleteAllModal(false)}
+            disabled={deleteLoading}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleDeleteAll}
+            disabled={deleteLoading}
+          >
+            {deleteLoading ? 'Deleting...' : 'Yes, Delete All Products'}
+          </Button>
+        </DialogFooter>
+      </Dialog>
+
+      <ProductFormDialog
+        open={showProductForm}
+        onOpenChange={setShowProductForm}
+        onSuccess={fetchProducts}
+        productId={editingProduct?.id}
+        initialData={editingProduct ? {
+          sku: editingProduct.sku,
+          name: editingProduct.name,
+          description: editingProduct.description || '',
+          active: editingProduct.active ?? true,
+        } : undefined}
+        mode={editingProduct ? 'edit' : 'create'}
+      />
     </div>
   );
 }

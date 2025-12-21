@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, TestTube, ExternalLink, Check, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, Trash2, TestTube, ExternalLink, Check, X, Power } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Dialog, DialogHeader, DialogTitle, DialogContent, DialogFooter } from './ui/dialog';
@@ -84,6 +84,15 @@ export function WebhooksTab() {
     }
   };
 
+  const handleToggleActive = async (id: number, currentState: boolean) => {
+    try {
+      await webhooksApi.update(id, { is_active: !currentState });
+      fetchWebhooks();
+    } catch (error) {
+      console.error('Failed to toggle webhook:', error);
+    }
+  };
+
   const toggleEventType = (eventType: string) => {
     setNewWebhook(prev => ({
       ...prev,
@@ -122,14 +131,17 @@ export function WebhooksTab() {
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-2">
                         <h3 className="font-medium">{webhook.url}</h3>
-                        <span
-                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${webhook.is_active
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-gray-100 text-gray-800'
+                        <button
+                          onClick={() => handleToggleActive(webhook.id, webhook.is_active)}
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors ${webhook.is_active
+                            ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                            : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                             }`}
+                          title="Click to toggle"
                         >
+                          <Power className="h-3 w-3 mr-1" />
                           {webhook.is_active ? 'Active' : 'Inactive'}
-                        </span>
+                        </button>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {webhook.event_types.map(eventType => (

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -16,6 +16,7 @@ export interface Product {
   description?: string;
   price?: string;
   stock?: number;
+  active?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -76,12 +77,31 @@ export const productsApi = {
     return api.get('/products/', { params }).then(res => res.data);
   },
 
+  createProduct: (data: {
+    sku: string;
+    name: string;
+    description?: string;
+    active?: boolean;
+  }): Promise<Product> => {
+    return api.post('/products/', data).then(res => res.data);
+  },
+
+  updateProduct: (id: number, data: Partial<Product>): Promise<Product> => {
+    return api.patch(`/products/${id}/`, data).then(res => res.data);
+  },
+
   deleteProduct: (id: number): Promise<void> => {
     return api.delete(`/products/${id}/`).then(() => { });
   },
 
   bulkDelete: (ids: number[]): Promise<void> => {
     return api.post('/products/bulk-delete/', { ids }).then(() => { });
+  },
+
+  deleteAll: (): Promise<{ deleted_count: number }> => {
+    return api.delete('/products/delete_all/', {
+      data: { confirmed: true }
+    }).then(res => res.data.data);
   },
 };
 
@@ -95,6 +115,10 @@ export const webhooksApi = {
     event_types: string[];
   }): Promise<Webhook> => {
     return api.post('/products/webhooks/', data).then(res => res.data);
+  },
+
+  update: (id: number, data: Partial<Webhook>): Promise<Webhook> => {
+    return api.patch(`/products/webhooks/${id}/`, data).then(res => res.data);
   },
 
   delete: (id: number): Promise<void> => {
