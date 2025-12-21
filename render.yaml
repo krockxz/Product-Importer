@@ -33,6 +33,7 @@ services:
     runtime: python
     plan: starter
     buildCommand: ./build.sh
+    preDeployCommand: python manage.py migrate
     startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
     healthCheckPath: /admin/
     healthCheck:
@@ -83,7 +84,7 @@ services:
     name: product-importer-worker
     runtime: python
     plan: starter
-    buildCommand: ./build.sh
+    buildCommand: pip install -r requirements.txt
     startCommand: celery -A config worker --loglevel=info
     envVars:
       # Django Settings

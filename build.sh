@@ -18,8 +18,8 @@ npm run build
 cd ..
 
 # Run Django migrations
-echo "Running Django migrations..."
-python manage.py migrate
+# echo "Running Django migrations..."
+# python manage.py migrate
 
 # Collect static files
 echo "Collecting static files..."
