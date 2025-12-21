@@ -31,8 +31,7 @@ services:
     runtime: python
     plan: free
     buildCommand: ./build.sh
-    preDeployCommand: python manage.py migrate
-    startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
+    startCommand: python manage.py migrate && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
     healthCheckPath: /admin/
     envVars:
       # Django Settings
@@ -78,12 +77,14 @@ services:
         value: /opt/render/project/src/mediafiles
 
   # Celery Worker Service
-  - type: worker
+  # Celery Worker Service (Running as Web for Free Tier)
+  - type: web
     name: product-importer-worker
     runtime: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: celery -A config worker --loglevel=info
+    startCommand: /bin/bash -c 'celery -A config worker --loglevel=info & python -m http.server $PORT'
+    healthCheckPath: /
     envVars:
       # Django Settings
       - key: SECRET_KEY
