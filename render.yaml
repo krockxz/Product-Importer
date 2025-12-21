@@ -36,7 +36,6 @@ services:
     preDeployCommand: python manage.py migrate
     startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
     healthCheckPath: /admin/
-    healthCheckPath: /admin/
     envVars:
       # Django Settings
       - key: SECRET_KEY
@@ -128,7 +127,6 @@ services:
     rootDir: frontend
     buildCommand: npm run build
     startCommand: npm run preview -- --port $PORT --host 0.0.0.0
-    healthCheckPath: /
     healthCheckPath: /
     envVars:
       # API URL
