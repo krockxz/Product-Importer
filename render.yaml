@@ -1,29 +1,9 @@
 services:
-  # PostgreSQL Database
-  - type: pserv
-    name: postgres
-    env: docker
+  # Managed Redis
+  - type: redis
+    name: product-importer-redis
     plan: free
-    dockerfilePath: postgres.Dockerfile
-    dockerContext: .
-    envVars:
-      - key: POSTGRES_DB
-        value: product_importer
-      - key: POSTGRES_USER
-        value: postgres
-      - key: POSTGRES_PASSWORD
-        generateValue: true
-
-  # Redis Service
-  - type: pserv
-    name: redis
-    env: docker
-    plan: free
-    dockerfilePath: redis.Dockerfile
-    dockerContext: .
-    envVars:
-      - key: REDIS_PASSWORD
-        generateValue: true
+    ipAllowList: [] # Allow internal connections
 
   # Django Web Service
   - type: web
@@ -51,20 +31,15 @@ services:
       # Database Configuration
       - key: DATABASE_URL
         fromDatabase:
-          name: postgres
+          name: product_importer_db
           property: connectionString
 
       # Redis Configuration
-      - key: REDIS_HOST
+      - key: REDIS_URL
         fromService:
-          type: pserv
-          name: redis
-          property: host
-      - key: REDIS_PORT
-        fromService:
-          type: pserv
-          name: redis
-          property: port
+          type: redis
+          name: product-importer-redis
+          property: connectionString
 
       # Static/Media Files
       - key: STATIC_URL
@@ -76,7 +51,6 @@ services:
       - key: MEDIA_ROOT
         value: /opt/render/project/src/mediafiles
 
-  # Celery Worker Service
   # Celery Worker Service (Running as Web for Free Tier)
   - type: web
     name: product-importer-worker
@@ -103,20 +77,15 @@ services:
       # Database Configuration
       - key: DATABASE_URL
         fromDatabase:
-          name: postgres
+          name: product_importer_db
           property: connectionString
 
       # Redis Configuration
-      - key: REDIS_HOST
+      - key: REDIS_URL
         fromService:
-          type: pserv
-          name: redis
-          property: host
-      - key: REDIS_PORT
-        fromService:
-          type: pserv
-          name: redis
-          property: port
+          type: redis
+          name: product-importer-redis
+          property: connectionString
 
       # Static/Media Files
       - key: STATIC_URL
@@ -143,6 +112,12 @@ services:
         value: https://product-importer-api.onrender.com/api
       - key: PORT
         value: 10000
+
+databases:
+  - name: product_importer_db
+    plan: free
+    databaseName: product_importer
+    user: product_importer
 
 # Global configuration
 version: "1"
