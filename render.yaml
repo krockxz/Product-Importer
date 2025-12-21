@@ -62,7 +62,7 @@ services:
         fromService:
           type: pserv
           name: redis
-          property: url
+          property: connectionString
 
       # Static/Media Files
       - key: STATIC_URL
@@ -107,7 +107,7 @@ services:
         fromService:
           type: pserv
           name: redis
-          property: url
+          property: connectionString
 
       # Static/Media Files
       - key: STATIC_URL
