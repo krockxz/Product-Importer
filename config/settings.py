@@ -15,6 +15,8 @@ from pathlib import Path
 from decouple import config
 import dj_database_url
 
+import sys
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -22,13 +24,23 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
+# Check if running on Render
+IN_RENDER = 'RENDER' in os.environ
+
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-me-in-production')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG', default=True, cast=bool)
+if IN_RENDER:
+    # On Render, default to False unless explicitly overridden
+    DEBUG = config('DEBUG', default=False, cast=bool)
+else:
+    DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=lambda v: [s.strip() for s in v.split(',')])
+if IN_RENDER:
+    ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='.onrender.com', cast=lambda v: [s.strip() for s in v.split(',')])
+else:
+    ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=lambda v: [s.strip() for s in v.split(',')])
 
 
 # Application definition
@@ -81,10 +93,14 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 # Use DATABASE_URL if provided (e.g., by Render.com), otherwise use individual DB_* env vars
+# Use DATABASE_URL if provided (e.g., by Render.com), otherwise use individual DB_* env vars
 if 'DATABASE_URL' in os.environ:
     DATABASES = {
         'default': dj_database_url.parse(config('DATABASE_URL'))
     }
+elif IN_RENDER:
+    # If on Render, DATABASE_URL is mandatory. Fail fast if missing.
+    raise ValueError("DATABASE_URL is missing in Render environment!")
 else:
     DATABASES = {
         'default': {
