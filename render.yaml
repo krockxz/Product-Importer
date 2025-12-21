@@ -36,11 +36,7 @@ services:
     preDeployCommand: python manage.py migrate
     startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
     healthCheckPath: /admin/
-    healthCheck:
-      path: /admin/
-      expectedStatusCodes:
-        - 200
-        - 302  # Redirect to login if not authenticated
+    healthCheckPath: /admin/
     envVars:
       # Django Settings
       - key: SECRET_KEY
@@ -133,10 +129,7 @@ services:
     buildCommand: npm run build
     startCommand: npm run preview -- --port $PORT --host 0.0.0.0
     healthCheckPath: /
-    healthCheck:
-      path: /
-      expectedStatusCodes:
-        - 200
+    healthCheckPath: /
     envVars:
       # API URL
       - key: VITE_API_URL
