@@ -53,7 +53,12 @@ class WebhookSerializer(serializers.ModelSerializer):
         return [obj.event_type]
 
     def to_internal_value(self, data):
-        """Handle frontend sending event_types as array."""
+        """
+        Handle frontend sending event_types as array.
+        
+        The frontend expects and sends 'event_types' (list), but the backend model
+        stores a single 'event_type' (str). This method adapts the input data.
+        """
         # Convert event_types array to single event_type for the model
         if 'event_types' in data and isinstance(data['event_types'], list) and data['event_types']:
             data['event_type'] = data['event_types'][0]

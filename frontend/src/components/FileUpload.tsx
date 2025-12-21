@@ -53,7 +53,7 @@ export function FileUpload({ onUploadComplete }: { onUploadComplete?: () => void
     }
   };
 
-  const pollStatus = async (taskId: string) => {
+  const pollStatus = async (taskId: string, errorCount = 0) => {
     try {
       const response: any = await productsApi.getTaskStatus(taskId);
       const taskStatus: TaskStatus = response.data || response;
@@ -69,7 +69,16 @@ export function FileUpload({ onUploadComplete }: { onUploadComplete?: () => void
       }
     } catch (error) {
       console.error('Failed to get status:', error);
-      setTimeout(() => pollStatus(taskId), 1000);
+
+      if (errorCount >= 10) { // Stop after ~10 seconds of errors
+        setUploading(false);
+        setStatus(prev => prev ? { ...prev, status: 'failed', message: 'Connection lost. Please check server status.' } : null);
+        return;
+      }
+
+      // Exponential backoff for errors
+      const delay = Math.min(1000 * Math.pow(1.5, errorCount), 5000);
+      setTimeout(() => pollStatus(taskId, errorCount + 1), delay);
     }
   };
 

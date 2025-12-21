@@ -71,7 +71,7 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     permission_classes = [permissions.AllowAny]  # Allow unauthenticated access for development
-    lookup_field = 'sku'
+    lookup_field = 'pk'  # Use primary key for CRUD operations
 
 
 class WebhookMixin:

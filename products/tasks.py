@@ -44,8 +44,7 @@ def import_products_task(self, file_path: str) -> Dict[str, Any]:
         file_path,
         chunksize=CHUNK_SIZE,
         encoding="utf-8",
-        dtype=str,
-        usecols=lambda x: x.lower() in {"sku", "name", "description", "active"}
+        dtype=str
     ):
         try:
             created, updated = _process_chunk(chunk_df)
@@ -97,8 +96,8 @@ def _process_chunk(chunk_df: pd.DataFrame) -> tuple[int, int]:
 
     # Split into creates and updates
     create_mask = ~chunk_df["sku"].isin(existing_skus)
-    to_create_df = chunk_df[create_mask]
-    to_update_df = chunk_df[~create_mask]
+    to_create_df = chunk_df[create_mask].copy()
+    to_update_df = chunk_df[~create_mask].copy()
 
     created = _bulk_create(to_create_df) if len(to_create_df) > 0 else 0
     updated = _bulk_update(to_update_df) if len(to_update_df) > 0 else 0
@@ -181,17 +180,64 @@ def _error_result(task_id: str, message: str) -> Dict[str, Any]:
 
 @shared_task(name="products.get_import_progress")
 def get_import_progress(task_id: str) -> Dict[str, Any]:
-    """Get import progress from cache."""
+    """
+    Get import progress from cache with fallback to Celery task state.
+    
+    Returns standard format: {'progress': int, 'status': str, 'message': str}
+    """
+    from celery.result import AsyncResult
+    
+    # Fast path: Check cache
     progress = cache.get(PROGRESS_KEY.format(task_id))
+    if progress is not None:
+        return _format_cache_status(progress)
 
-    if progress is None:
-        return {"progress": 0, "status": "pending", "message": "Task not found"}
+    # Slow path: Check Celery state (cache expired or not started)
+    try:
+        return _get_celery_task_status(task_id)
+    except Exception as e:
+        logger.error(f"Failed to get task status for {task_id}: {e}")
+        return {"progress": 0, "status": "error", "message": "Unable to fetch task status"}
+
+
+def _format_cache_status(progress: int) -> Dict[str, Any]:
+    """Format status from simple cache integer."""
     if progress == -1:
         return {"progress": 0, "status": "error", "message": "Import failed"}
     if progress == 100:
-        return {"progress": 100, "status": "completed", "message": "Complete"}
+        return {"progress": 100, "status": "completed", "message": "Import complete"}
+    return {"progress": progress, "status": "processing", "message": f"Processing: {progress}%"}
 
-    return {"progress": progress, "status": "processing", "message": f"Progress: {progress}%"}
+
+def _get_celery_task_status(task_id: str) -> Dict[str, Any]:
+    """Resolve status from Celery AsyncResult."""
+    from celery.result import AsyncResult
+    result = AsyncResult(task_id)
+    state = result.state
+
+    if state == 'SUCCESS':
+        res = result.result or {}
+        return {
+            "progress": 100,
+            "status": "completed",
+            "message": f"Import complete: {res.get('created', 0)} created, {res.get('updated', 0)} updated"
+        }
+    
+    state_messages = {
+        'PENDING': "Task queued",
+        'STARTED': "Starting import...",
+        'RETRY': "Retrying import...",
+        'REVOKED': "Import cancelled",
+    }
+    
+    if state == 'FAILURE':
+        return {"progress": 0, "status": "failed", "message": f"Import failed: {result.info}"}
+        
+    return {
+        "progress": 0,
+        "status": "processing" if state in ['STARTED', 'RETRY'] else "failed" if state == 'REVOKED' else "pending",
+        "message": state_messages.get(state, f"Task state: {state}")
+    }
 
 
 @shared_task(name="products.trigger_webhook", max_retries=3, autoretry_for=(Exception,), retry_backoff=True)

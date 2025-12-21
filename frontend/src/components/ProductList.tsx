@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Trash2, Search, ChevronLeft, ChevronRight, Plus, Edit } from 'lucide-react';
+import { Trash2, Search, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Dialog, DialogHeader, DialogTitle, DialogContent, DialogFooter } from './ui/dialog';
 import { ProductFormDialog } from './ProductFormDialog';
+import { ProductTable } from './ProductTable';
+import { ProductDeleteAll } from './ProductDeleteAll';
 import { productsApi } from '@/services/api';
 import type { Product } from '@/services/api';
 
@@ -169,75 +171,15 @@ export function ProductList({ refreshTrigger }: { refreshTrigger?: number }) {
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-4">
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.length === products.length && products.length > 0}
-                      onChange={(e) => handleSelectAll(e.target.checked)}
-                      className="rounded border-gray-300"
-                    />
-                  </th>
-                  <th className="text-left py-3 px-4">SKU</th>
-                  <th className="text-left py-3 px-4">Name</th>
-                  <th className="text-left py-3 px-4">Price</th>
-                  <th className="text-left py-3 px-4">Stock</th>
-                  <th className="text-left py-3 px-4">Created</th>
-                  <th className="text-left py-3 px-4">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {products.map((product) => (
-                  <tr key={`${product.id}-${product.sku}`} className="border-b hover:bg-gray-50">
-                    <td className="py-3 px-4">
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.includes(product.id)}
-                        onChange={(e) => handleSelectOne(product.id, e.target.checked)}
-                        className="rounded border-gray-300"
-                      />
-                    </td>
-                    <td className="py-3 px-4 font-mono text-sm">{product.sku}</td>
-                    <td className="py-3 px-4">{product.name}</td>
-                    <td className="py-3 px-4">{product.price || '-'}</td>
-                    <td className="py-3 px-4">{product.stock ?? '-'}</td>
-                    <td className="py-3 px-4 text-sm text-gray-500">
-                      {new Date(product.created_at).toLocaleDateString()}
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEditProduct(product)}
-                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(product.id)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            {products.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                No products found
-              </div>
-            )}
-          </div>
+          <ProductTable
+            products={products}
+            selectedIds={selectedIds}
+            onSelectAll={handleSelectAll}
+            onSelectOne={handleSelectOne}
+            onEdit={handleEditProduct}
+            onDelete={handleDelete}
+            isEmpty={products.length === 0}
+          />
 
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-6">
@@ -270,25 +212,13 @@ export function ProductList({ refreshTrigger }: { refreshTrigger?: number }) {
         </>
       )}
 
-      {/* Danger Zone - Delete All */}
-      {totalCount > 0 && (
-        <div className="mt-8 pt-6 border-t border-gray-200">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <h3 className="text-sm font-semibold text-red-900 mb-2">Danger Zone</h3>
-            <p className="text-sm text-red-700 mb-3">
-              Delete all {totalCount} products from the database. This action cannot be undone.
-            </p>
-            <Button
-              variant="destructive"
-              onClick={() => setShowDeleteAllModal(true)}
-              className="text-sm"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete All Products
-            </Button>
-          </div>
-        </div>
-      )}
+      <ProductDeleteAll
+        totalCount={totalCount}
+        showModal={showDeleteAllModal}
+        onOpenModal={setShowDeleteAllModal}
+        onConfirm={handleDeleteAll}
+        loading={deleteLoading}
+      />
 
       <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
         <DialogHeader>
@@ -314,40 +244,6 @@ export function ProductList({ refreshTrigger }: { refreshTrigger?: number }) {
             disabled={deleteLoading}
           >
             {deleteLoading ? 'Deleting...' : 'Delete'}
-          </Button>
-        </DialogFooter>
-      </Dialog>
-
-      <Dialog open={showDeleteAllModal} onOpenChange={setShowDeleteAllModal}>
-        <DialogHeader>
-          <DialogTitle>Delete All Products?</DialogTitle>
-        </DialogHeader>
-        <DialogContent>
-          <div className="space-y-3">
-            <p className="text-red-800 font-semibold">⚠️ Warning: This action cannot be undone!</p>
-            <p>
-              You are about to delete <strong>all {totalCount} products</strong> from the database.
-              This will permanently remove all product data.
-            </p>
-            <p className="text-sm text-gray-600">
-              Are you absolutely sure you want to continue?
-            </p>
-          </div>
-        </DialogContent>
-        <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => setShowDeleteAllModal(false)}
-            disabled={deleteLoading}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={handleDeleteAll}
-            disabled={deleteLoading}
-          >
-            {deleteLoading ? 'Deleting...' : 'Yes, Delete All Products'}
           </Button>
         </DialogFooter>
       </Dialog>
