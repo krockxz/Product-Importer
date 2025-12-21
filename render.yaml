@@ -4,7 +4,7 @@ services:
     name: postgres
     env: docker
     plan: free
-    repo: https://github.com/render-examples/postgres
+    dockerfilePath: postgres.Dockerfile
     dockerContext: .
     envVars:
       - key: POSTGRES_DB
@@ -19,7 +19,7 @@ services:
     name: redis
     env: docker
     plan: free
-    repo: https://github.com/render-examples/redis
+    dockerfilePath: redis.Dockerfile
     dockerContext: .
     envVars:
       - key: REDIS_PASSWORD
