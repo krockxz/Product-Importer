@@ -6,7 +6,6 @@ services:
     plan: starter
     repo: https://github.com/render-examples/postgres
     dockerContext: .
-    healthCheckPath: /health
     envVars:
       - key: POSTGRES_DB
         value: product_importer
@@ -22,7 +21,6 @@ services:
     plan: starter
     repo: https://github.com/render-examples/redis
     dockerContext: .
-    healthCheckPath: /health
     envVars:
       - key: REDIS_PASSWORD
         generateValue: true
