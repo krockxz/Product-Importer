@@ -3,7 +3,7 @@ services:
   - type: pserv
     name: postgres
     env: docker
-    plan: starter
+    plan: free
     repo: https://github.com/render-examples/postgres
     dockerContext: .
     envVars:
@@ -18,7 +18,7 @@ services:
   - type: pserv
     name: redis
     env: docker
-    plan: starter
+    plan: free
     repo: https://github.com/render-examples/redis
     dockerContext: .
     envVars:
@@ -29,7 +29,7 @@ services:
   - type: web
     name: product-importer-api
     runtime: python
-    plan: starter
+    plan: free
     buildCommand: ./build.sh
     preDeployCommand: python manage.py migrate
     startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
@@ -81,7 +81,7 @@ services:
   - type: worker
     name: product-importer-worker
     runtime: python
-    plan: starter
+    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: celery -A config worker --loglevel=info
     envVars:
@@ -131,7 +131,7 @@ services:
   - type: web
     name: product-importer-frontend
     runtime: node
-    plan: starter
+    plan: free
     rootDir: frontend
     buildCommand: npm run build
     startCommand: npm run preview -- --port $PORT --host 0.0.0.0
