@@ -124,14 +124,28 @@ def upload_csv(request):
     if not file.name.lower().endswith('.csv'):
         return error_response('File must be a CSV', 'INVALID_FILE_TYPE')
 
-    # Save to temp file
-    with tempfile.NamedTemporaryFile(mode='wb+', suffix='.csv', delete=False) as temp_file:
+    # Save to media files (shared volume)
+    from django.conf import settings
+    import uuid
+    
+    upload_dir = os.path.join(settings.MEDIA_ROOT, 'uploads')
+    os.makedirs(upload_dir, exist_ok=True)
+    
+    file_ext = os.path.splitext(file.name)[1]
+    filename = f"{uuid.uuid4()}{file_ext}"
+    temp_file_path = os.path.join(upload_dir, filename)
+    
+    with open(temp_file_path, 'wb+') as destination:
         for chunk in file.chunks():
-            temp_file.write(chunk)
-        temp_file_path = temp_file.name
+            destination.write(chunk)
 
     try:
         task = import_products_task.delay(temp_file_path)
+        # Initialize cache to avoid "Task not found" race condition
+        from django.core.cache import cache
+        from .tasks import PROGRESS_KEY, CACHE_TIMEOUT
+        cache.set(PROGRESS_KEY.format(task.id), 0, CACHE_TIMEOUT)
+
         return success_response({
             'task_id': task.id,
             'message': 'Import started'

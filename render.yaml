@@ -1,0 +1,147 @@
+services:
+  # PostgreSQL Database
+  - type: pserv
+    name: postgres
+    env: docker
+    plan: starter
+    repo: https://github.com/render-examples/postgres
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: POSTGRES_DB
+        value: product_importer
+      - key: POSTGRES_USER
+        value: postgres
+      - key: POSTGRES_PASSWORD
+        generateValue: true
+
+  # Redis Service
+  - type: pserv
+    name: redis
+    env: docker
+    plan: starter
+    repo: https://github.com/render-examples/redis
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: REDIS_PASSWORD
+        generateValue: true
+
+  # Django Web Service
+  - type: web
+    name: product-importer-api
+    runtime: python
+    plan: starter
+    buildCommand: ./build.sh
+    startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
+    healthCheckPath: /admin/
+    healthCheck:
+      path: /admin/
+      expectedStatusCodes:
+        - 200
+        - 302  # Redirect to login if not authenticated
+    envVars:
+      # Django Settings
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: false
+      - key: ALLOWED_HOSTS
+        value: .onrender.com
+      - key: USE_S3
+        value: false
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://product-importer-frontend.onrender.com
+      - key: CSRF_TRUSTED_ORIGINS
+        value: https://product-importer-frontend.onrender.com
+
+      # Database Configuration
+      - key: DATABASE_URL
+        fromDatabase:
+          name: postgres
+          property: connectionString
+
+      # Redis Configuration
+      - key: REDIS_URL
+        fromService:
+          type: pserv
+          name: redis
+          property: url
+
+      # Static/Media Files
+      - key: STATIC_URL
+        value: /staticfiles/
+      - key: MEDIA_URL
+        value: /mediafiles/
+      - key: STATIC_ROOT
+        value: /opt/render/project/src/staticfiles
+      - key: MEDIA_ROOT
+        value: /opt/render/project/src/mediafiles
+
+  # Celery Worker Service
+  - type: worker
+    name: product-importer-worker
+    runtime: python
+    plan: starter
+    buildCommand: ./build.sh
+    startCommand: celery -A config worker --loglevel=info
+    envVars:
+      # Django Settings
+      - key: SECRET_KEY
+        sync: false
+      - key: DEBUG
+        value: false
+      - key: ALLOWED_HOSTS
+        value: .onrender.com
+      - key: USE_S3
+        value: false
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://product-importer-frontend.onrender.com
+      - key: CSRF_TRUSTED_ORIGINS
+        value: https://product-importer-frontend.onrender.com
+
+      # Database Configuration
+      - key: DATABASE_URL
+        fromDatabase:
+          name: postgres
+          property: connectionString
+
+      # Redis Configuration
+      - key: REDIS_URL
+        fromService:
+          type: pserv
+          name: redis
+          property: url
+
+      # Static/Media Files
+      - key: STATIC_URL
+        value: /staticfiles/
+      - key: MEDIA_URL
+        value: /mediafiles/
+      - key: STATIC_ROOT
+        value: /opt/render/project/src/staticfiles
+      - key: MEDIA_ROOT
+        value: /opt/render/project/src/mediafiles
+
+  # React Frontend
+  - type: web
+    name: product-importer-frontend
+    runtime: node
+    plan: starter
+    rootDir: frontend
+    buildCommand: npm run build
+    startCommand: npm run preview -- --port $PORT --host 0.0.0.0
+    healthCheckPath: /
+    healthCheck:
+      path: /
+      expectedStatusCodes:
+        - 200
+    envVars:
+      # API URL
+      - key: VITE_API_URL
+        value: https://product-importer-api.onrender.com/api
+      - key: PORT
+        value: 10000
+
+# Global configuration
+version: "1"

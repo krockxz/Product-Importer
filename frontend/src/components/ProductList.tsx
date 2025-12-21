@@ -157,7 +157,7 @@ export function ProductList({ refreshTrigger }: { refreshTrigger?: number }) {
               </thead>
               <tbody>
                 {products.map((product) => (
-                  <tr key={product.id} className="border-b hover:bg-gray-50">
+                  <tr key={`${product.id}-${product.sku}`} className="border-b hover:bg-gray-50">
                     <td className="py-3 px-4">
                       <input
                         type="checkbox"
