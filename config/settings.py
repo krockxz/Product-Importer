@@ -199,17 +199,24 @@ CSRF_TRUSTED_ORIGINS = config(
 CSRF_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SAMESITE = 'Lax'
 
-# Cache Configuration
+# Redis Configuration
+if 'REDIS_URL' in os.environ:
+    REDIS_URL = config('REDIS_URL')
+elif 'REDIS_HOST' in os.environ and 'REDIS_PORT' in os.environ:
+    REDIS_URL = f"redis://{config('REDIS_HOST')}:{config('REDIS_PORT')}/0"
+else:
+    REDIS_URL = config('REDIS_URL', default='redis://localhost:6379/0')
+
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": config('REDIS_URL', default='redis://localhost:6379/0'),
+        "LOCATION": REDIS_URL,
     }
 }
 
 # Celery Configuration
-CELERY_BROKER_URL = config('REDIS_URL', default='redis://localhost:6379/0')
-CELERY_RESULT_BACKEND = config('REDIS_URL', default='redis://localhost:6379/0')
+CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'

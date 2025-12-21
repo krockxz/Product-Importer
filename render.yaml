@@ -58,11 +58,16 @@ services:
           property: connectionString
 
       # Redis Configuration
-      - key: REDIS_URL
+      - key: REDIS_HOST
         fromService:
           type: pserv
           name: redis
-          property: connectionString
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          type: pserv
+          name: redis
+          property: port
 
       # Static/Media Files
       - key: STATIC_URL
@@ -103,11 +108,16 @@ services:
           property: connectionString
 
       # Redis Configuration
-      - key: REDIS_URL
+      - key: REDIS_HOST
         fromService:
           type: pserv
           name: redis
-          property: connectionString
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          type: pserv
+          name: redis
+          property: port
 
       # Static/Media Files
       - key: STATIC_URL
