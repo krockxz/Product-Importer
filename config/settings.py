@@ -42,6 +42,10 @@ if IN_RENDER:
 else:
     ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=lambda v: [s.strip() for s in v.split(',')])
 
+# Always allow .onrender.com subdomains if not already explicitly allowed
+if '.onrender.com' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append('.onrender.com')
+
 
 # Application definition
 
