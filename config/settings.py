@@ -97,25 +97,38 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 # Use DATABASE_URL if provided (e.g., by Render.com), otherwise use individual DB_* env vars
-# Use DATABASE_URL if provided (e.g., by Render.com), otherwise use individual DB_* env vars
-if 'DATABASE_URL' in os.environ:
-    DATABASES = {
-        'default': dj_database_url.parse(config('DATABASE_URL'))
-    }
-elif IN_RENDER:
-    # If on Render, DATABASE_URL is mandatory. Fail fast if missing.
-    raise ValueError("DATABASE_URL is missing in Render environment!")
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': config('DB_NAME', default='product_importer'),
-            'USER': config('DB_USER', default='postgres'),
-            'PASSWORD': config('DB_PASSWORD', default='postgres'),
-            'HOST': config('DB_HOST', default='localhost'),
-            'PORT': config('DB_PORT', default='5432'),
+# During build (collectstatic), allow database config to be missing
+try:
+    if 'DATABASE_URL' in os.environ:
+        DATABASES = {
+            'default': dj_database_url.parse(config('DATABASE_URL'))
         }
-    }
+    elif IN_RENDER:
+        # If on Render, DATABASE_URL is mandatory. Fail fast if missing.
+        raise ValueError("DATABASE_URL is missing in Render environment!")
+    else:
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': config('DB_NAME', default='product_importer'),
+                'USER': config('DB_USER', default='postgres'),
+                'PASSWORD': config('DB_PASSWORD', default='postgres'),
+                'HOST': config('DB_HOST', default='localhost'),
+                'PORT': config('DB_PORT', default='5432'),
+            }
+        }
+except Exception as e:
+    # During build/collectstatic, if database config fails, use a dummy config
+    # This allows collectstatic to run without database access
+    if os.environ.get('SKIP_DB_CHECK', 'false').lower() == 'true':
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': ':memory:',
+            }
+        }
+    else:
+        raise
 
 
 # Password validation
