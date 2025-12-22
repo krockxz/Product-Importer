@@ -104,7 +104,7 @@ services:
     plan: free
     rootDir: frontend
     buildCommand: npm install && npm run build
-    startCommand: npm run preview -- --port $PORT --host 0.0.0.0
+    startCommand: npm start
     healthCheckPath: /
     envVars:
       # API URL
