@@ -27,8 +27,8 @@ RUN mkdir -p /app/staticfiles /app/mediafiles
 # Collect static files
 RUN python manage.py collectstatic --noinput || true
 
-# Expose port
+# Expose default port (Render will still inject PORT)
 EXPOSE 8000
 
-# Run the application
-CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000"]
+# Run the application, binding to Render's PORT if provided
+CMD ["sh", "-c", "gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000}"]
