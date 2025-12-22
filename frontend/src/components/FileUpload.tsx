@@ -3,7 +3,7 @@ import { Upload, File, X, CheckCircle, AlertCircle } from 'lucide-react';
 import { Button } from './ui/button';
 import { Progress } from './ui/progress';
 import { productsApi } from '@/services/api';
-import type { UploadResponse, TaskStatus } from '@/services/api';
+import type { TaskStatus } from '@/services/api';
 
 export function FileUpload({ onUploadComplete }: { onUploadComplete?: () => void }) {
   const [file, setFile] = useState<File | null>(null);
