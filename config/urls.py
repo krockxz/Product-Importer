@@ -20,6 +20,7 @@ from django.urls import path, include
 from .views import health
 
 urlpatterns = [
+    path("health/", health, name="health"),
     path("", health, name="health"),
     path("admin/", admin.site.urls),
     path("api/products/", include("products.urls", namespace="products")),
