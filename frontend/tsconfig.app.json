@@ -13,9 +13,6 @@
     /* Bundler mode */
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true,
-    "moduleDetection": "force",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "noEmit": true,
