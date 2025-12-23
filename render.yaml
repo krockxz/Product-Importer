@@ -24,9 +24,9 @@ services:
       - key: USE_S3
         value: false
       - key: CORS_ALLOWED_ORIGINS
-        value: https://product-importer-frontend.onrender.com
+        value: https://product-importer-frontend-wheo.onrender.com,https://product-importer-frontend.onrender.com
       - key: CSRF_TRUSTED_ORIGINS
-        value: https://product-importer-frontend.onrender.com
+        value: https://product-importer-frontend-wheo.onrender.com,https://product-importer-frontend.onrender.com
 
       # Database Configuration
       - key: DATABASE_URL
@@ -70,9 +70,9 @@ services:
       - key: USE_S3
         value: false
       - key: CORS_ALLOWED_ORIGINS
-        value: https://product-importer-frontend.onrender.com
+        value: https://product-importer-frontend-wheo.onrender.com,https://product-importer-frontend.onrender.com
       - key: CSRF_TRUSTED_ORIGINS
-        value: https://product-importer-frontend.onrender.com
+        value: https://product-importer-frontend-wheo.onrender.com,https://product-importer-frontend.onrender.com
 
       # Database Configuration
       - key: DATABASE_URL

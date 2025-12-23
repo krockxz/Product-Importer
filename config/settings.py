@@ -191,21 +191,50 @@ REST_FRAMEWORK = {
 }
 
 # CORS settings
+DEFAULT_CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    # Common Render frontend hostnames for this project (slug can change)
+    "https://product-importer-frontend.onrender.com",
+    "https://product-importer-frontend-wheo.onrender.com",
+]
+
 CORS_ALLOWED_ORIGINS = config(
     'CORS_ALLOWED_ORIGINS',
-    default='http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173',
+    default=",".join(DEFAULT_CORS_ALLOWED_ORIGINS),
     cast=lambda v: [s.strip() for s in v.split(',')]
 )
+
+# Allow any Render-issued hostname that matches our frontend slug to avoid
+# CORS breakage when Render regenerates the URL (e.g., adding suffixes)
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https:\/\/product-importer-frontend.*\.onrender\.com$",
+]
 
 # Allow credentials for CORS
 CORS_ALLOW_CREDENTIALS = True
 
 # CSRF settings
+DEFAULT_CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://product-importer-frontend.onrender.com",
+    "https://product-importer-frontend-wheo.onrender.com",
+]
+
 CSRF_TRUSTED_ORIGINS = config(
     'CSRF_TRUSTED_ORIGINS',
-    default='http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173',
+    default=",".join(DEFAULT_CSRF_TRUSTED_ORIGINS),
     cast=lambda v: [s.strip() for s in v.split(',')]
 )
+
+# Keep a permissive wildcard for Render hostnames so preview/prod URLs work
+if "https://*.onrender.com" not in CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS.append("https://*.onrender.com")
 
 # For file uploads, we might need to relax CSRF for the API endpoints
 # In production, you should implement proper authentication
