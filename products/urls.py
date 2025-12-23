@@ -6,6 +6,7 @@ app_name = 'products'
 urlpatterns = [
     # Product endpoints
     path('stats/', views.product_stats, name='product-stats'),
+    path('info/', views.api_info, name='api-info'),
     path('', views.ProductListCreateView.as_view(), name='product-list-create'),
     path('<int:pk>/', views.ProductDetailView.as_view(), name='product-detail'),  # Changed from sku to pk for bulk delete
     path('bulk-delete/', views.bulk_delete_products, name='bulk-delete-products'),

@@ -2,6 +2,7 @@
 import os
 import tempfile
 from django.db.models import Q
+from django.utils import timezone
 from rest_framework import generics, permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -236,4 +237,14 @@ def product_stats(request):
         'total': Product.objects.count(),
         'active': Product.objects.filter(active=True).count(),
         'inactive': Product.objects.filter(active=False).count(),
+    })
+
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def api_info(request):
+    """Lightweight API info endpoint (example)."""
+    return success_response({
+        'service': 'products',
+        'time': timezone.now().isoformat(),
     })
