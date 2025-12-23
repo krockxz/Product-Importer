@@ -11,7 +11,7 @@ services:
     runtime: python
     plan: free
     buildCommand: ./build.sh
-    startCommand: python manage.py migrate && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
+    startCommand: ./scripts/start_api.sh
     healthCheckPath: /admin/
     envVars:
       # Django Settings
@@ -57,7 +57,9 @@ services:
     runtime: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: /bin/bash -c 'celery -A config worker --loglevel=info & python -m http.server $PORT'
+    # Keep the service alive for free-tier constraints but do not run Celery here.
+    # Celery now runs inside the API service to share the same filesystem for uploads.
+    startCommand: python -m http.server $PORT
     healthCheckPath: /
     envVars:
       # Django Settings
