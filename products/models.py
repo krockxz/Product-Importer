@@ -80,6 +80,8 @@ class Webhook(models.Model):
     class WebhookEventType(models.TextChoices):
         PRODUCT_CREATED = 'product.created', 'Product Created'
         PRODUCT_UPDATED = 'product.updated', 'Product Updated'
+        PRODUCT_DELETED = 'product.deleted', 'Product Deleted'
+        BULK_IMPORT_COMPLETED = 'bulk_import.completed', 'Bulk Import Completed'
 
     url = models.URLField(
         max_length=500,

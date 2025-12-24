@@ -40,28 +40,50 @@ export function WebhooksTab() {
     fetchWebhooks();
   }, []);
 
+  const [createError, setCreateError] = useState<string | null>(null);
+
   const handleCreate = async () => {
     if (!newWebhook.url || newWebhook.event_types.length === 0) return;
 
     try {
       setCreateLoading(true);
+      setCreateError(null);
       await webhooksApi.create(newWebhook);
       setNewWebhook({ url: '', event_types: [] });
       setShowCreateModal(false);
       fetchWebhooks();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create webhook:', error);
+      const msg = error.response?.data?.non_field_errors?.[0]
+        || error.response?.data?.url?.[0]
+        || error.response?.data?.event_type?.[0]
+        || 'Failed to create webhook';
+      setCreateError(msg);
     } finally {
       setCreateLoading(false);
     }
   };
+
+  // ... (inside DialogContent)
+
+  {
+    createError && (
+      <div className="p-3 text-sm text-red-600 bg-red-50 rounded-md border border-red-200">
+        {createError}
+      </div>
+    )
+  }
+
+  <div>
+    <label className="block text-sm font-medium mb-2">URL</label>
+    {/* ... */}
 
   const handleDelete = async (id: number) => {
     if (!confirm('Are you sure you want to delete this webhook?')) return;
 
     try {
       await webhooksApi.delete(id);
-      fetchWebhooks();
+    fetchWebhooks();
     } catch (error) {
       console.error('Failed to delete webhook:', error);
     }
@@ -70,39 +92,39 @@ export function WebhooksTab() {
   const handleTest = async (id: number) => {
     try {
       setTestResults(prev => ({ ...prev, [id]: 'testing' }));
-      await webhooksApi.test(id);
-      setTestResults(prev => ({ ...prev, [id]: 'success' }));
+    await webhooksApi.test(id);
+      setTestResults(prev => ({...prev, [id]: 'success' }));
       setTimeout(() => {
-        setTestResults(prev => ({ ...prev, [id]: null }));
+      setTestResults(prev => ({ ...prev, [id]: null }));
       }, 3000);
     } catch (error) {
       setTestResults(prev => ({ ...prev, [id]: 'error' }));
       setTimeout(() => {
-        setTestResults(prev => ({ ...prev, [id]: null }));
+      setTestResults(prev => ({ ...prev, [id]: null }));
       }, 3000);
-      console.error('Failed to test webhook:', error);
+    console.error('Failed to test webhook:', error);
     }
   };
 
   const handleToggleActive = async (id: number, currentState: boolean) => {
     try {
       await webhooksApi.update(id, { is_active: !currentState });
-      fetchWebhooks();
+    fetchWebhooks();
     } catch (error) {
       console.error('Failed to toggle webhook:', error);
     }
   };
 
   const toggleEventType = (eventType: string) => {
-    setNewWebhook(prev => ({
-      ...prev,
-      event_types: prev.event_types.includes(eventType)
-        ? prev.event_types.filter(t => t !== eventType)
-        : [...prev.event_types, eventType],
-    }));
+      setNewWebhook(prev => ({
+        ...prev,
+        event_types: prev.event_types.includes(eventType)
+          ? prev.event_types.filter(t => t !== eventType)
+          : [...prev.event_types, eventType],
+      }));
   };
 
-  return (
+    return (
     <div className="w-full max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-md">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">Webhooks</h2>
@@ -173,7 +195,8 @@ export function WebhooksTab() {
                         {testResults[webhook.id] === 'error' && (
                           <X className="h-4 w-4 text-red-600 mr-2" />
                         )}
-                        <TestTube className="h-4 w-4" />
+                        <TestTube className="h-4 w-4 mr-2" />
+                        Test
                       </Button>
                       <Button
                         variant="outline"
@@ -207,6 +230,11 @@ export function WebhooksTab() {
         </DialogHeader>
         <DialogContent>
           <div className="space-y-4">
+            {createError && (
+              <div className="p-3 text-sm text-red-600 bg-red-50 rounded-md border border-red-200">
+                {createError}
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium mb-2">URL</label>
               <Input
@@ -250,5 +278,5 @@ export function WebhooksTab() {
         </DialogFooter>
       </Dialog>
     </div>
-  );
+    );
 }

@@ -79,6 +79,7 @@ class WebhookMixin:
     queryset = Webhook.objects.all()
     serializer_class = WebhookSerializer
     permission_classes = [permissions.AllowAny]  # Allow unauthenticated access for development
+    pagination_class = None  # Return simple list for frontend simplicity
 
 
 class WebhookListCreateView(WebhookMixin, generics.ListCreateAPIView):
